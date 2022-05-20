@@ -97,6 +97,7 @@ def prepare_loaders(df, fold):
     return train_dl, val_dl
 
 if __name__ == "__main__":
+    
     if debug == True:
         df = pd.read_csv("data/petfinder-pawpularity-score/train.csv", nrows=100)
     else:
