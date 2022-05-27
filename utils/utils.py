@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torchvision
+import glob
+import os
 def show_image(img):
     img = img / 2 + 0.5     # unnormalize
     npimg = img.numpy()
@@ -14,3 +16,11 @@ def validate_dataloader(dataloader):
         print(img.shape, metadata.shape, target.shape)
         break
     show_image(torchvision.utils.make_grid(image))
+
+def remove_models(path, fold):
+    """
+    Remove all files in dir
+    """
+
+    for file in glob.glob(f'path/*_{fold}'):
+        os.remove(file)
