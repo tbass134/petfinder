@@ -37,6 +37,7 @@ class PetFinderDataset(Dataset):
     def __getitem__(self, idx):
         row = self.data.iloc[idx]
         img_path = os.path.join(self.base_path + self.directory, row.iloc[0] + ".jpg")
+        print("img_path",img_path)
         image = torchvision.io.read_image(img_path)
         if self.transforms:
             image = self.transforms(image)
