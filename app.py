@@ -18,17 +18,18 @@ tfrms = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
 ])
-debug = True
+debug = False
 n_folds = 5
-epochs = 10
+epochs = 5
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# print("device", device)
+if device != "cpu":
+    print("device", device)
 
 data_dir = "data/petfinder-pawpularity-score"
 model_dir = "models"
 model = PetModel().to(device)
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.1)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=1, eta_min=1e-6, last_epoch=-1)
 
 # logits = model(image, metadata)
 # print(logits.shape)

@@ -19,16 +19,16 @@ def train_on_batch(model, optimizer, scheduler, criterion, dataloader, epoch):
     model.train()
     running_loss = 0.
     for idx, (image, metadata, target) in enumerate(dataloader, 0):
+        optimizer.zero_grad()
 
         output = model(image, metadata)
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()
-        scheduler.step()
-        optimizer.zero_grad()
 
         running_loss += loss.item()
-
+    scheduler.step()
+    
     return running_loss
 
 def val_one_batch(model, criterion, dataloader):
