@@ -111,14 +111,20 @@ if __name__ == "__main__":
     print(f'num_bins: {num_bins}')
 
     for fold in range(n_folds):
-    print(f'Running fold: {fold}')
-    train_dl, val_dl = prepare_loaders(df, fold)
+        print(f'Running fold: {fold}')
+        train_dl, val_dl = prepare_loaders(df, fold)
 
-    for epoch in range(epochs):
-        print(f'Running epoch {epoch} of {epochs}')
+        for epoch in range(epochs):
+            print(f'Running epoch {epoch} of {epochs}')
+            min_loss = np.inf
 
-        train_loss = train_on_batch(model, optimizer, criterion, train_dl, epoch)
-        print("train_loss", train_loss)
+            train_loss = train_on_batch(model, optimizer, criterion, train_dl, epoch)
+            print("train_loss", train_loss)
 
-        val_loss = val_one_batch(model, criterion, val_dl)
-        print("val_loss", val_loss)
+            val_loss = val_one_batch(model, criterion, val_dl)
+            print("val_loss", val_loss)
+
+            if min_loss > val_loss:
+                min_loss = val_loss
+                torch.save(model.state_dict(), f"models/model_fold_{fold}.pt")
+                print("Saved model")
