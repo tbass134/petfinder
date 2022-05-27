@@ -21,12 +21,12 @@ tfrms = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
 ])
-
 debug = False
 n_folds = 5
 epochs = 1
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print("device", device)
+data_dir = "data/petfinder-pawpularity-score"
 
 
 model = PetModel().to(device)
@@ -86,11 +86,11 @@ def prepare_loaders(df, fold):
     df_train = df[df.kfold != fold].reset_index(drop=True)
     df_valid = df[df.kfold == fold].reset_index(drop=True)
 
-    train_dataset = dataset.PetFinderDataset("data/petfinder-pawpularity-score", df_train, tfrms, "/train", device, debug=debug)
+    train_dataset = dataset.PetFinderDataset(data_dir, df_train, tfrms, "/train", device, debug=debug)
     train_dl = DataLoader(train_dataset, batch_size=64, shuffle=True)
     # print("train_dl", len(train_dl))
 
-    val_dataset = dataset.PetFinderDataset("data/petfinder-pawpularity-score", df_valid, tfrms, "/train", device, debug=debug)
+    val_dataset = dataset.PetFinderDataset(data_dir, df_valid, tfrms, "/train", device, debug=debug)
     val_dl = DataLoader(val_dataset, batch_size=64, shuffle=False)
     # print("val_dl", len(val_dl))
 
@@ -99,26 +99,28 @@ def prepare_loaders(df, fold):
 if __name__ == "__main__":
     
     if debug == True:
-        df = pd.read_csv("data/petfinder-pawpularity-score/train.csv", nrows=100)
+        df = pd.read_csv(f'{data_dir}/train.csv', nrows=100)
     else:
-        df = pd.read_csv("data/petfinder-pawpularity-score/train.csv")
+        df = pd.read_csv(f'{data_dir}/train.csv')
 
     #Sturges' rule
     num_bins = int(np.floor(1+np.log2(len(df))))
+    if debug:
+        num_bins = 2
     df = create_folds(df, n_s=num_bins, n_grp=14)
 
     print(f'loaded {len(df)} rows')
     print(f'num_bins: {num_bins}')
 
     for fold in range(n_folds):
-    print(f'Running fold: {fold}')
-    train_dl, val_dl = prepare_loaders(df, fold)
+        print(f'Running fold: {fold}')
+        train_dl, val_dl = prepare_loaders(df, fold)
 
-    for epoch in range(epochs):
-        print(f'Running epoch {epoch} of {epochs}')
+        for epoch in range(epochs):
+            print(f'Running epoch {epoch} of {epochs}')
 
-        train_loss = train_on_batch(model, optimizer, criterion, train_dl, epoch)
-        print("train_loss", train_loss)
+            train_loss = train_on_batch(model, optimizer, criterion, train_dl, epoch)
+            print("train_loss", train_loss)
 
-        val_loss = val_one_batch(model, criterion, val_dl)
-        print("val_loss", val_loss)
+            val_loss = val_one_batch(model, criterion, val_dl)
+            print("val_loss", val_loss)
