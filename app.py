@@ -1,4 +1,5 @@
 import os
+import uuid
 import dataset
 import torch
 import torchvision.transforms as transforms
@@ -38,6 +39,7 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=
 
 if __name__ == "__main__":
     
+    guid = str(uuid.uuid4())
     # create folder for models
     print("create folder for models..")
     try:
@@ -74,7 +76,7 @@ if __name__ == "__main__":
             if min_loss > val_loss:
                 min_loss = val_loss
 
-                _utils.remove_models(model_dir, fold)
-                torch.save(model.state_dict(), f"{model_dir}/model_fold_{fold}.pt")
+                _utils.remove_models(model_dir, fold, guid)
+                torch.save(model.state_dict(), f"{model_dir}/{guid}_model_fold_{fold}.pt")
 
                 print("Saved model")
