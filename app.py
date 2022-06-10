@@ -19,9 +19,9 @@ tfrms = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
 ])
-debug = False
+debug = True
 n_folds = 5
-epochs = 5
+epochs = 1
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if device != "cpu":
     print("device", device)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
             val_loss = val_one_batch(model, criterion, val_dl)
             print("val_loss", val_loss)
 
-            if min_loss > val_loss:
+            if True:
                 min_loss = val_loss
 
                 _utils.remove_models(model_dir, fold, guid)

@@ -17,10 +17,10 @@ def validate_dataloader(dataloader):
         break
     show_image(torchvision.utils.make_grid(image))
 
-def remove_models(path, fold):
+def remove_models(path, fold, guid):
     """
     Remove all files in dir
     """
 
-    for file in glob.glob(f'path/*_{fold}'):
+    for file in glob.glob(f'{path}/{guid}_model_fold_{fold}'):
         os.remove(file)
