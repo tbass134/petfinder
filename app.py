@@ -12,6 +12,7 @@ from sklearn.metrics import mean_squared_error
 import sklearn.model_selection as model_selection
 import numpy as np
 import pandas as pd
+import os
 
 from model import PetModel
 from utils import *
@@ -21,7 +22,7 @@ tfrms = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
 ])
-debug = False
+debug = True
 n_folds = 5
 epochs = 1
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -58,9 +59,10 @@ def val_one_batch(model, criterion, dataloader):
     model.eval()
     running_val_loss = 0.
     for idx, (image, metadata, target) in enumerate(dataloader, 0):
-        output = model(image, metadata)
-        loss = criterion(output, target)
-        running_val_loss += loss.item()
+        with torch.no_grad():
+            output = model(image, metadata)
+            loss = criterion(output, target)
+            running_val_loss += loss.item()
 
     return running_val_loss
 
@@ -99,14 +101,14 @@ def prepare_loaders(df, fold):
 if __name__ == "__main__":
     
     if debug == True:
-        df = pd.read_csv(f'{data_dir}/train.csv', nrows=100)
+        df = pd.read_csv(f'{data_dir}/train.csv', nrows=500)
+        num_bins = 2
     else:
         df = pd.read_csv(f'{data_dir}/train.csv')
+        #Sturges' rule
+        num_bins = int(np.floor(1+np.log2(len(df))))
 
-    #Sturges' rule
-    num_bins = int(np.floor(1+np.log2(len(df))))
-    if debug:
-        num_bins = 2
+
     df = create_folds(df, n_s=num_bins, n_grp=14)
 
     print(f'loaded {len(df)} rows')
@@ -115,10 +117,10 @@ if __name__ == "__main__":
     for fold in range(n_folds):
         print(f'Running fold: {fold}')
         train_dl, val_dl = prepare_loaders(df, fold)
-
+        min_loss = np.inf
         for epoch in range(epochs):
             print(f'Running epoch {epoch} of {epochs}')
-            min_loss = np.inf
+            
             train_loss = train_on_batch(model, optimizer, criterion, train_dl, epoch)
             print("train_loss", train_loss)
 
@@ -127,5 +129,9 @@ if __name__ == "__main__":
 
             if min_loss > val_loss:
                 min_loss = val_loss
-                torch.save(model.state_dict(), f"models/model_fold_{fold}.pt")
+                if not os.path.exists("models"):
+                    os.makedirs("models")
+                model_dir = f"models/model_fold_{fold}_epoch_{epoch}.pt"
+                utils.remove_models("models/", n_folds)
+                torch.save(model.state_dict(), model_dir)
                 print("Saved model")

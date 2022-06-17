@@ -13,15 +13,8 @@ from utils import utils
 class PetFinderDataset(Dataset):
     def __init__(self, base_path, df, transforms, directory, device, debug=True):
         self.base_path = base_path
-        # if debug:
-        #     self.data = pd.read_csv(os.path.join(self.base_path, csv_path)).sample(n=100)
-        # else:
-        #     self.data = pd.read_csv(os.path.join(self.base_path, csv_path))
-
-        if debug  == True:
-            self.data = df.sample(n=100)
-        else:
-            self.data = df
+      
+        self.data = df
 
         self.transforms = transforms
         self.directory = directory
@@ -37,7 +30,6 @@ class PetFinderDataset(Dataset):
     def __getitem__(self, idx):
         row = self.data.iloc[idx]
         img_path = os.path.join(self.base_path + self.directory, row.iloc[0] + ".jpg")
-        print("img_path",img_path)
         image = torchvision.io.read_image(img_path)
         if self.transforms:
             image = self.transforms(image)
