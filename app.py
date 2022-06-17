@@ -3,16 +3,21 @@ import uuid
 import dataset
 import torch
 import torchvision.transforms as transforms
+from torch.utils.data import Dataset, DataLoader
+
 import torchvision
 from torchvision import transforms, utils
+import torch.nn as nn
 import torch.optim as optim
+from sklearn.metrics import mean_squared_error
+import sklearn.model_selection as model_selection
 import numpy as np
 import pandas as pd
 import os
+import sklearn.model_selection as model_selection
 
 from model import PetModel
 from utils import utils as _utils
-from train import *
 
 tfrms = transforms.Compose([
     transforms.ToPILImage(),
@@ -20,9 +25,9 @@ tfrms = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
 ])
-debug = True
+debug = False
 n_folds = 5
-epochs = 1
+epochs = 10
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if device != "cpu":
     print("device", device)
@@ -39,7 +44,6 @@ scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=
 
 def criterion(outputs, targets):
     return torch.sqrt(nn.MSELoss()(outputs.view(-1), targets.view(-1)))
-
 
 def train_on_batch(model, optimizer, criterion, dataloader, epoch):
     model.train()
@@ -97,9 +101,6 @@ def prepare_loaders(df, fold):
     return train_dl, val_dl
 
 if __name__ == "__main__":
-    
-    guid = str(uuid.uuid4())
-    # create folder for models
     print("create folder for models..")
     try:
         os.makedirs(model_dir)
@@ -134,9 +135,7 @@ if __name__ == "__main__":
 
             if min_loss > val_loss:
                 min_loss = val_loss
-                if not os.path.exists("models"):
-                    os.makedirs("models")
+                print("saving model")
                 model_dir = f"models/model_fold_{fold}_epoch_{epoch}.pt"
                 _utils.remove_models(n_folds)
                 torch.save(model.state_dict(), model_dir)
-                print("Saved model")
