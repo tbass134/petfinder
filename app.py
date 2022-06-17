@@ -1,21 +1,19 @@
-from cmath import log
-from statistics import mode
+import os
+import uuid
 import dataset
 import torch
-from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
 import torchvision
 from torchvision import transforms, utils
-import torch.nn as nn
 import torch.optim as optim
-from sklearn.metrics import mean_squared_error
-import sklearn.model_selection as model_selection
 import numpy as np
 import pandas as pd
 import os
 
 from model import PetModel
-from utils import *
+from utils import utils as _utils
+from train import *
+
 tfrms = transforms.Compose([
     transforms.ToPILImage(),
     transforms.Resize((28, 28)),
@@ -26,12 +24,14 @@ debug = True
 n_folds = 5
 epochs = 1
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print("device", device)
+if device != "cpu":
+    print("device", device)
+
 data_dir = "data/petfinder-pawpularity-score"
-
-
+model_dir = "models"
 model = PetModel().to(device)
-optimizer = optim.Adam(model.parameters(), lr=1e-4) 
+optimizer = optim.Adam(model.parameters(), lr=1e-4)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=1, eta_min=1e-6, last_epoch=-1)
 
 # logits = model(image, metadata)
 # print(logits.shape)
@@ -90,16 +90,22 @@ def prepare_loaders(df, fold):
 
     train_dataset = dataset.PetFinderDataset(data_dir, df_train, tfrms, "/train", device, debug=debug)
     train_dl = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    # print("train_dl", len(train_dl))
 
     val_dataset = dataset.PetFinderDataset(data_dir, df_valid, tfrms, "/train", device, debug=debug)
     val_dl = DataLoader(val_dataset, batch_size=64, shuffle=False)
-    # print("val_dl", len(val_dl))
 
     return train_dl, val_dl
 
 if __name__ == "__main__":
     
+    guid = str(uuid.uuid4())
+    # create folder for models
+    print("create folder for models..")
+    try:
+        os.makedirs(model_dir)
+    except Exception as e:
+        print("model dir already exists")
+        
     if debug == True:
         df = pd.read_csv(f'{data_dir}/train.csv', nrows=500)
         num_bins = 2
@@ -107,7 +113,6 @@ if __name__ == "__main__":
         df = pd.read_csv(f'{data_dir}/train.csv')
         #Sturges' rule
         num_bins = int(np.floor(1+np.log2(len(df))))
-
 
     df = create_folds(df, n_s=num_bins, n_grp=14)
 
@@ -132,6 +137,6 @@ if __name__ == "__main__":
                 if not os.path.exists("models"):
                     os.makedirs("models")
                 model_dir = f"models/model_fold_{fold}_epoch_{epoch}.pt"
-                utils.remove_models("models/", n_folds)
+                _utils.remove_models(n_folds)
                 torch.save(model.state_dict(), model_dir)
                 print("Saved model")

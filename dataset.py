@@ -8,14 +8,11 @@ import matplotlib.pyplot as plt
 import os
 import pandas as pd
 import numpy as np
-from utils import utils
 
 class PetFinderDataset(Dataset):
     def __init__(self, base_path, df, transforms, directory, device, debug=True):
         self.base_path = base_path
-      
-        self.data = df
-
+        self.data = df    
         self.transforms = transforms
         self.directory = directory
         self.device = device

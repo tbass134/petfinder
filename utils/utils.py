@@ -17,7 +17,8 @@ def validate_dataloader(dataloader):
         break
     show_image(torchvision.utils.make_grid(image))
 
-def remove_models(path, folds):
+def remove_models(folds):
+    print("Removing models...")
     for fold in range(folds):
         for file in glob.glob(f"models/model_fold_{fold}_epoch_*.pt"):
             os.remove(file)
