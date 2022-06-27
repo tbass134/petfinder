@@ -4,3 +4,4 @@ torchaudio
 pandas
 scikit-learn
 pytorch-lightning
+timm

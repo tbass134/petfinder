@@ -22,9 +22,9 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from model import PetModel
 from utils import *
 
-debug = True
+debug = False
 n_folds = 5
-epochs = 1
+epochs = 10
 
 # logits = model(image, metadata)
 # print(logits.shape)
