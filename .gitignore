@@ -1,3 +1,6 @@
 
 *.pyc
 .vscode/launch.json
+requirments.txt
+checkpoints/*
+lightning_logs/*

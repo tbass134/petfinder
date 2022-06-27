@@ -18,10 +18,10 @@ class PetFinderDataset(Dataset):
         # else:
         #     self.data = pd.read_csv(os.path.join(self.base_path, csv_path))
 
-        if debug  == True:
-            self.data = df.sample(n=100)
-        else:
-            self.data = df
+        # if debug  == True:
+        #     self.data = df.sample(n=100)
+        # else:
+        self.data = df
 
         self.transforms = transforms
         self.directory = directory
