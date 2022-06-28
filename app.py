@@ -1,6 +1,3 @@
-from cmath import log
-from statistics import mode
-from unittest.mock import mock_open
 import dataset
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -19,8 +16,6 @@ import pytorch_lightning as pl
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
-from model import PetModel
-from utils import *
 
 debug = False
 n_folds = 5
@@ -78,7 +73,7 @@ class PetFinderModule(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         image, metadata, target = batch
         y_hat = self.forward(image, metadata)
-        loss = self.criterion(y_hat, target)
+        loss = self._criterion(y_hat, target)
 
         rmse = mean_squared_error(target.detach().cpu(), y_hat.detach().cpu(), squared=False) 
 
@@ -111,7 +106,7 @@ class PetFinderModule(pl.LightningModule):
         with torch.no_grad():
             output = self.forward(image, metadata)
 
-            loss = self.criterion(output, target)
+            loss = self._criterion(output, target)
         
         self.log('val_loss', loss, on_step= True, prog_bar=False, logger=True)
         return {"predictions": output.detach(), "labels": target}
@@ -134,53 +129,51 @@ class PetFinderModule(pl.LightningModule):
 
         self.log("val_rmse", val_rmse, prog_bar=True, logger=True)
 
-    def criterion(self, outputs, targets):
-        return torch.sqrt(nn.MSELoss()(outputs.view(-1), targets.view(-1)))
-  
- 
-
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=1e-4)
 
-    def get_train_transforms(self):
-        tfrms = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((28, 28)),
-            transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        ])
-        return tfrms
-
-    def get_val_transforms(self):
-        tfrms = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((28, 28)),
-            transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-        ])
-        return tfrms
+    def _criterion(self, outputs, targets):
+        return torch.sqrt(nn.MSELoss()(outputs.view(-1), targets.view(-1)))
 
     def train_dataloader(self):
        
-        train_dataset = dataset.PetFinderDataset("data/petfinder-pawpularity-score", self.train_df, self.get_val_transforms(), "/train", self.device, debug=self.debug)
+        train_dataset = dataset.PetFinderDataset("data/petfinder-pawpularity-score", self.train_df, self._get_train_transforms(), "/train", self.device, debug=self.debug)
         train_dl = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=12)
         return train_dl
 
     def val_dataloader(self):
       
-        val_dataset = dataset.PetFinderDataset("data/petfinder-pawpularity-score", self.val_df, self.get_val_transforms(), "/train", self.device, debug=self.debug)
+        val_dataset = dataset.PetFinderDataset("data/petfinder-pawpularity-score", self.val_df, self._get_val_transforms(), "/train", self.device, debug=self.debug)
         val_dl = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=12)
         return val_dl
 
     def test_dataloader(self):
         pass
 
+    def _get_train_transforms(self):
+        tfrms = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((28, 28)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ])
+        return tfrms
+
+    def _get_val_transforms(self):
+        tfrms = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((28, 28)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ])
+        return tfrms
+
 if __name__ == "__main__":
+
     if debug == True:
         df = pd.read_csv("data/petfinder-pawpularity-score/train.csv", nrows=100)
     else:
         df = pd.read_csv("data/petfinder-pawpularity-score/train.csv")
-
 
     #Sturges' rule
     num_bins = int(np.floor(1+np.log2(len(df))))
@@ -205,7 +198,7 @@ if __name__ == "__main__":
 
         model = PetFinderModule(train_dl, val_dl, fold, debug=debug)
         trainer = pl.Trainer(
-            gpus = None,
+            accelerator="auto",
             checkpoint_callback=True,
             callbacks=[early_stopping_callback, checkpoint_callback],
             max_epochs = epochs,
