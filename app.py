@@ -24,7 +24,7 @@ from utils import *
 
 debug = False
 n_folds = 5
-epochs = 10
+epochs = 2
 
 # logits = model(image, metadata)
 # print(logits.shape)
@@ -132,13 +132,12 @@ class PetFinderModule(pl.LightningModule):
         
         self.print(f'Epoch {self.current_epoch}: Validation RMSE: {val_rmse:.4f}')
 
-        
         self.log("val_rmse", val_rmse, prog_bar=True, logger=True)
+
     def criterion(self, outputs, targets):
         return torch.sqrt(nn.MSELoss()(outputs.view(-1), targets.view(-1)))
   
-    def validation_epoch_end(self, outputs):
-        pass
+ 
 
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=1e-4)
@@ -194,7 +193,7 @@ if __name__ == "__main__":
         print(f'Running fold: {fold}')
         train_dl, val_dl = prepare_df(df, fold)
 
-        # early_stopping_callback = EarlyStopping(monitor='val_rmse',mode="min", patience=4)
+        early_stopping_callback = EarlyStopping(monitor='val_rmse',mode="min", patience=4)
         checkpoint_callback = ModelCheckpoint(
             dirpath="checkpoints",
             filename="best-checkpoint-{fold}-{val_loss:.3f}",
@@ -208,7 +207,7 @@ if __name__ == "__main__":
         trainer = pl.Trainer(
             gpus = None,
             checkpoint_callback=True,
-            callbacks=[checkpoint_callback],
+            callbacks=[early_stopping_callback, checkpoint_callback],
             max_epochs = epochs,
             progress_bar_refresh_rate=1, 
             num_sanity_val_steps=1 if debug else 0,
