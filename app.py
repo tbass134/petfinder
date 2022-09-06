@@ -216,11 +216,8 @@ if __name__ == "__main__":
         model = PetFinderModule(train_dl, val_dl, fold, debug=debug)
         trainer = pl.Trainer(
             accelerator="auto",
-            checkpoint_callback=True,
             callbacks=[early_stopping_callback, checkpoint_callback],
             max_epochs = epochs,
-            progress_bar_refresh_rate=1, 
-            num_sanity_val_steps=1 if debug else 0,
-            stochastic_weight_avg = True,
+            num_sanity_val_steps=1 if debug else 0
     )
         trainer.fit(model)
