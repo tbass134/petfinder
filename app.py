@@ -11,7 +11,7 @@ import sklearn.model_selection as model_selection
 import numpy as np
 import pandas as pd
 import timm
-
+import os, shutil
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
@@ -20,6 +20,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 debug = False
 n_folds = 5
 epochs = 2
+
+DATA_DIR = "data"
 
 # logits = model(image, metadata)
 # print(logits.shape)
@@ -137,13 +139,13 @@ class PetFinderModule(pl.LightningModule):
 
     def train_dataloader(self):
        
-        train_dataset = dataset.PetFinderDataset("data/petfinder-pawpularity-score", self.train_df, self._get_train_transforms(), "/train", self.device, debug=self.debug)
+        train_dataset = dataset.PetFinderDataset(f"{DATA_DIR}", self.train_df, self._get_train_transforms(), "/train", self.device, debug=self.debug)
         train_dl = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=12)
         return train_dl
 
     def val_dataloader(self):
       
-        val_dataset = dataset.PetFinderDataset("data/petfinder-pawpularity-score", self.val_df, self._get_val_transforms(), "/train", self.device, debug=self.debug)
+        val_dataset = dataset.PetFinderDataset(f"{DATA_DIR}", self.val_df, self._get_val_transforms(), "/train", self.device, debug=self.debug)
         val_dl = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=12)
         return val_dl
 
@@ -168,12 +170,27 @@ class PetFinderModule(pl.LightningModule):
         ])
         return tfrms
 
+def download_dataset():
+    if not os.path.exists(f"{DATA_DIR}/train"):
+        print("Downloading Dataset...")
+        if os.path.exists(DATA_DIR):
+            shutil.rmtree(DATA_DIR)
+        os.mkdir(DATA_DIR)
+
+        os.system(f"kaggle competitions download -c petfinder-pawpularity-score -w -p {DATA_DIR}")
+
+        import zipfile
+        with zipfile.ZipFile(f"{DATA_DIR}/petfinder-pawpularity-score.zip","r") as zip_ref:    
+            zip_ref.extractall(DATA_DIR)
+
 if __name__ == "__main__":
 
+    download_dataset()
+
     if debug == True:
-        df = pd.read_csv("data/petfinder-pawpularity-score/train.csv", nrows=100)
+        df = pd.read_csv(f"{DATA_DIR}/train.csv", nrows=100)
     else:
-        df = pd.read_csv("data/petfinder-pawpularity-score/train.csv")
+        df = pd.read_csv(f"{DATA_DIR}/train.csv")
 
     #Sturges' rule
     num_bins = int(np.floor(1+np.log2(len(df))))

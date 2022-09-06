@@ -4,5 +4,6 @@
 requirments.txt
 checkpoints/*
 lightning_logs/*
+data/*
 *.jpg
 .DS_Store
