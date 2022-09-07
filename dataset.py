@@ -40,14 +40,14 @@ class PetFinderDataset(Dataset):
         image = torchvision.io.read_image(img_path)
         if self.transforms:
             image = self.transforms(image)
-        image = image.to(self.device)
+        # image = image.to(self.device)
 
         metadata = row[self.dense_features].values.astype('float32')
 
 
         # metadata  = row.iloc[1:-1].astype('float32').to_numpy().reshape(1,-1)
         
-        metadata = torch.tensor(metadata).to(self.device)
-        target = torch.tensor(row["Pawpularity"], dtype=torch.float).to(self.device)
+        metadata = torch.tensor(metadata)
+        target = torch.tensor(row["Pawpularity"], dtype=torch.float)
 
         return  (image, metadata, target)
