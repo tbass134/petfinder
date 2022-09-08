@@ -11,7 +11,7 @@ import numpy as np
 from utils import utils
 
 class PetFinderDataset(Dataset):
-    def __init__(self, base_path, df, transforms, directory, device, debug=True):
+    def __init__(self, base_path, df, transforms, directory, debug=True):
         self.base_path = base_path
         # if debug:
         #     self.data = pd.read_csv(os.path.join(self.base_path, csv_path)).sample(n=100)

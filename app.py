@@ -52,11 +52,12 @@ def prepare_df(df, fold):
 
 
 class PetFinderModule(pl.LightningModule):
-    def __init__(self, train_df, val_df, fold, debug=True):
+    def __init__(self, train_df, val_df, test_df, fold, debug=True):
         super().__init__()
 
         self.train_df = train_df
         self.val_df = val_df
+        self.test_df = test_df
         self.fold = fold
         self.debug = debug
 
@@ -139,18 +140,20 @@ class PetFinderModule(pl.LightningModule):
 
     def train_dataloader(self):
        
-        train_dataset = dataset.PetFinderDataset(f"{DATA_DIR}", self.train_df, self._get_train_transforms(), "/train", self.device, debug=self.debug)
+        train_dataset = dataset.PetFinderDataset(f"{DATA_DIR}", self.train_df, self._get_train_transforms(), "/train", debug=self.debug)
         train_dl = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=12)
         return train_dl
 
     def val_dataloader(self):
       
-        val_dataset = dataset.PetFinderDataset(f"{DATA_DIR}", self.val_df, self._get_val_transforms(), "/train", self.device, debug=self.debug)
+        val_dataset = dataset.PetFinderDataset(f"{DATA_DIR}", self.val_df, self._get_val_transforms(), "/train", debug=self.debug)
         val_dl = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=12)
         return val_dl
 
     def test_dataloader(self):
-        pass
+        test_dateset = dataset.PetFinderDataset(f"{DATA_DIR}", self.test_df, self.get_val_transforms(), "/test",debug=self.debug)
+        test_dl = DataLoader(test_dataset, batch_size=64, shuffle=False)
+        return test_dl
 
     def _get_train_transforms(self):
         tfrms = transforms.Compose([
