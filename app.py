@@ -131,7 +131,7 @@ class PetFinderModule(pl.LightningModule):
         self.print(f'Epoch {self.current_epoch}: Validation RMSE: {val_rmse:.4f}')
 
         self.log("val_rmse", val_rmse, prog_bar=True, logger=True)
-
+        
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=1e-4)
 
@@ -191,20 +191,22 @@ if __name__ == "__main__":
     download_dataset()
 
     if debug == True:
-        df = pd.read_csv(f"{DATA_DIR}/train.csv", nrows=100)
+        train_df = pd.read_csv(f"{DATA_DIR}/train.csv", nrows=100)
     else:
-        df = pd.read_csv(f"{DATA_DIR}/train.csv")
+        train_df = pd.read_csv(f"{DATA_DIR}/train.csv")
+
+    test_df = pd.read_csv(f"{DATA_DIR}/test.csv")
 
     #Sturges' rule
-    num_bins = int(np.floor(1+np.log2(len(df))))
-    df = create_folds(df, n_s=num_bins, n_grp=14)
+    num_bins = int(np.floor(1+np.log2(len(train_df))))
+    train_df = create_folds(train_df, n_s=num_bins, n_grp=14)
 
-    print(f'loaded {len(df)} rows')
+    print(f'loaded {len(train_df)} rows')
     print(f'num_bins: {num_bins}')
 
     for fold in range(n_folds):
         print(f'Running fold: {fold}')
-        train_dl, val_dl = prepare_df(df, fold)
+        train_dl, val_dl = prepare_df(train_df, fold)
 
         early_stopping_callback = EarlyStopping(monitor='val_rmse',mode="min", patience=4)
         checkpoint_callback = ModelCheckpoint(
