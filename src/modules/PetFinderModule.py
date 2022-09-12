@@ -29,7 +29,7 @@ class PetFinderModule(pl.LightningModule):
     def forward(self, image, metadata):
         x = self.model(image)
         x = self.dropout(x)
-        x = torch.cat((x, metadata), 1)
+        x = torch.cat((x, metadata), dim=1)
         x = self.out(x)
         return x
         
