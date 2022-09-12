@@ -1,3 +1,6 @@
+from ast import parse
+from inspect import ArgSpec
+import re
 import dataset
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -11,15 +14,11 @@ import sklearn.model_selection as model_selection
 import numpy as np
 import pandas as pd
 import timm
-import os, shutil
+import os, shutil, argparse
 import pytorch_lightning as pl
 from pytorch_lightning import Callback
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
-
-from src.modules import PetFinderModule
-debug = False
-n_folds = 5
-epochs = 2
+from src.modules.PetFinderModule import PetFinderModule
 
 DATA_DIR = "data"
 
@@ -51,7 +50,6 @@ def prepare_df(df, fold):
     return df_train, df_valid
 
 
-
 def download_dataset():
     if not os.path.exists(f"{DATA_DIR}/train"):
         print("Downloading Dataset...")
@@ -67,10 +65,17 @@ def download_dataset():
 
 if __name__ == "__main__":
 
-    download_dataset()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--debug", type=bool, default=False)
+    parser.add_argument("--folds", type=int, default=5)
+    parser.add_argument("--epochs", type=int, default=2)
 
-    if debug == True:
+    args = parser.parse_args()   
+
+    download_dataset()
+    if args.debug == True:
         train_df = pd.read_csv(f"{DATA_DIR}/train.csv", nrows=100)
+        args.epochs = 1
     else:
         train_df = pd.read_csv(f"{DATA_DIR}/train.csv")
 
@@ -83,7 +88,7 @@ if __name__ == "__main__":
     print(f'loaded {len(train_df)} rows')
     print(f'num_bins: {num_bins}')
 
-    for fold in range(n_folds):
+    for fold in range(args.folds):
         print(f'Running fold: {fold}')
         train_dl, val_dl = prepare_df(train_df, fold)
 
@@ -91,17 +96,17 @@ if __name__ == "__main__":
         checkpoint_callback = ModelCheckpoint(
             dirpath="checkpoints",
             filename="best-checkpoint-{fold}-{val_loss:.3f}",
-            save_top_k = epochs,
+            save_top_k = args.epochs,
             verbose=False,
             monitor="val_loss",
             mode="min"
         )
 
-        model = PetFinderModule(train_dl, val_dl, fold, debug=debug)
+        model = PetFinderModule(train_dl, val_dl, fold, DATA_DIR, debug=args.debug)
         trainer = pl.Trainer(
             accelerator="auto",
             callbacks=[early_stopping_callback, checkpoint_callback],
-            max_epochs = epochs,
-            num_sanity_val_steps=1 if debug else 0
+            max_epochs = args.epochs,
+            num_sanity_val_steps=1 if args.debug else 0
     )
         trainer.fit(model)

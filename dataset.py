@@ -25,7 +25,6 @@ class PetFinderDataset(Dataset):
 
         self.transforms = transforms
         self.directory = directory
-        self.device = device
         
         self.dense_features = [
             'Subject Focus', 'Eyes', 'Face', 'Near', 'Action', 'Accessory',

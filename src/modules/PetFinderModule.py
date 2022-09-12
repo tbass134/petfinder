@@ -11,13 +11,15 @@ import pytorch_lightning as pl
 
 
 class PetFinderModule(pl.LightningModule):
-    def __init__(self, train_df, val_df, fold, debug=True):
+    def __init__(self, train_df, val_df, fold, data_dir, debug=True):
         super().__init__()
 
         self.train_df = train_df
         self.val_df = val_df
         self.fold = fold
+        self.data_dir = data_dir
         self.debug = debug
+        self.save_hyperparameters()
 
         self.model = timm.create_model("tf_efficientnet_b0_ns", pretrained=True, in_chans=3)
         self.model.classifier = nn.Linear(self.model.classifier.in_features, 128)
@@ -90,6 +92,16 @@ class PetFinderModule(pl.LightningModule):
 
         self.log("val_rmse", val_rmse, prog_bar=True, logger=True)
 
+    def test_step(self, batch, batch_idx):
+        image, metadata, target = batch
+        with torch.no_grad():
+            output = self.forward(image, metadata)
+
+            loss = self._criterion(output, target)
+        
+        self.log('val_loss', loss, on_step= True, prog_bar=False, logger=True)
+        return {"predictions": output.detach(), "labels": target}
+
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=1e-4)
 
@@ -98,18 +110,21 @@ class PetFinderModule(pl.LightningModule):
 
     def train_dataloader(self):
        
-        train_dataset = dataset.PetFinderDataset(f"{DATA_DIR}", self.train_df, self._get_train_transforms(), "/train", self.device, debug=self.debug)
+        train_dataset = dataset.PetFinderDataset(self.data_dir, self.train_df, self._get_train_transforms(), "/train", debug=self.debug)
         train_dl = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=12)
         return train_dl
 
     def val_dataloader(self):
       
-        val_dataset = dataset.PetFinderDataset(f"{DATA_DIR}", self.val_df, self._get_val_transforms(), "/train", self.device, debug=self.debug)
+        val_dataset = dataset.PetFinderDataset(self.data_dir, self.val_df, self._get_val_transforms(), "/train", debug=self.debug)
         val_dl = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=12)
         return val_dl
 
     def test_dataloader(self):
-        pass
+
+        test_dataset = dataset.PetFinderDataset(self.data_dir, self.val_df, self._get_val_transforms(), "/test", debug=self.debug)
+        test_dl = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers=12)
+        return test_dl
 
     def _get_train_transforms(self):
         tfrms = transforms.Compose([
