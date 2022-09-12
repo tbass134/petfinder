@@ -92,16 +92,6 @@ class PetFinderModule(pl.LightningModule):
 
         self.log("val_rmse", val_rmse, prog_bar=True, logger=True)
 
-    def test_step(self, batch, batch_idx):
-        image, metadata, target = batch
-        with torch.no_grad():
-            output = self.forward(image, metadata)
-
-            loss = self._criterion(output, target)
-        
-        self.log('val_loss', loss, on_step= True, prog_bar=False, logger=True)
-        return {"predictions": output.detach(), "labels": target}
-
     def configure_optimizers(self):
         return optim.Adam(self.parameters(), lr=1e-4)
 
@@ -120,11 +110,6 @@ class PetFinderModule(pl.LightningModule):
         val_dl = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=12)
         return val_dl
 
-    def test_dataloader(self):
-
-        test_dataset = dataset.PetFinderDataset(self.data_dir, self.val_df, self._get_val_transforms(), "/test", debug=self.debug)
-        test_dl = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers=12)
-        return test_dl
 
     def _get_train_transforms(self):
         tfrms = transforms.Compose([
