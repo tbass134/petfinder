@@ -57,6 +57,8 @@ class PetFinderModule(pl.LightningModule):
 
         labels = torch.stack(labels)
         preds = torch.stack(preds)
+        print("preds", preds)
+        print("labels", labels)
 
         train_rmse = mean_squared_error(labels.detach().cpu(), preds.detach().cpu(), squared=False)
         
@@ -100,13 +102,13 @@ class PetFinderModule(pl.LightningModule):
 
     def train_dataloader(self):
        
-        train_dataset = dataset.PetFinderDataset(self.data_dir, self.train_df, self._get_train_transforms(), "/train", debug=self.debug)
+        train_dataset = dataset.PetFinderDataset(self.data_dir, self.train_df, self._get_train_transforms(), "/train")
         train_dl = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=12)
         return train_dl
 
     def val_dataloader(self):
       
-        val_dataset = dataset.PetFinderDataset(self.data_dir, self.val_df, self._get_val_transforms(), "/train", debug=self.debug)
+        val_dataset = dataset.PetFinderDataset(self.data_dir, self.val_df, self._get_val_transforms(), "/train")
         val_dl = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=12)
         return val_dl
 
