@@ -1,3 +1,4 @@
+import re
 import dataset
 import torch
 from torch.utils.data import DataLoader
@@ -21,16 +22,20 @@ class PetFinderModule(pl.LightningModule):
         self.debug = debug
         self.save_hyperparameters()
 
-        self.model = timm.create_model("tf_efficientnet_b0_ns", pretrained=True, in_chans=3)
-        self.model.classifier = nn.Linear(self.model.classifier.in_features, 128)
-        self.dropout = nn.Dropout(0.1)
-        self.out = nn.Linear(128 + 12, 1)
+        self.model = timm.create_model("tf_efficientnet_b0_ns", pretrained=True, in_chans=3, num_classes=500)
+        # self.model.classifier = nn.Linear(self.model.classifier.in_features, 128)
+        self.final_fc = nn.Sequential(
+            nn.Linear(500 + 12, 120),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(120, 1)
+        )
+
 
     def forward(self, image, metadata):
         x = self.model(image)
-        x = self.dropout(x)
-        x = torch.cat((x, metadata), dim=1)
-        x = self.out(x)
+        x = torch.cat([x, metadata], dim=-1)
+        x = self.final_fc(x)
         return x
         
     def training_step(self, batch, batch_idx):
@@ -98,7 +103,8 @@ class PetFinderModule(pl.LightningModule):
         return optim.Adam(self.parameters(), lr=1e-4)
 
     def _criterion(self, outputs, targets):
-        return torch.sqrt(nn.MSELoss()(outputs.view(-1), targets.view(-1)))
+        return nn.MSELoss()(outputs, targets)
+        # return torch.sqrt(nn.MSELoss()(outputs.view(-1), targets.view(-1)))
 
     def train_dataloader(self):
        

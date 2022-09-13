@@ -89,16 +89,18 @@ if __name__ == "__main__":
     print(f'num_bins: {num_bins}')
 
     for fold in range(args.folds):
-        print(f'Running fold: {fold}')
+        print(f"{'='*38} Fold: {fold} {'='*38}")
+
+
         train_dl, val_dl = prepare_df(train_df, fold)
 
         early_stopping_callback = EarlyStopping(monitor='val_rmse',mode="min", patience=4)
         checkpoint_callback = ModelCheckpoint(
             dirpath="checkpoints",
-            filename="best-checkpoint-{fold}-{val_loss:.3f}",
+            filename="best-checkpoint-{fold}-{val_rmse:.3f}",
             save_top_k = args.epochs,
-            verbose=False,
-            monitor="val_loss",
+            verbose=True,
+            monitor="val_rmse",
             mode="min"
         )
 
