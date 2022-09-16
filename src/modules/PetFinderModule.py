@@ -9,17 +9,22 @@ import torch.optim as optim
 from sklearn.metrics import mean_squared_error
 import timm
 import pytorch_lightning as pl
-
+import pandas as pd
 
 class PetFinderModule(pl.LightningModule):
-    def __init__(self, train_df, val_df, fold, data_dir, debug=True):
+    def __init__(self, data_dir, df_dir, fold, debug=True):
         super().__init__()
 
-        self.train_df = train_df
-        self.val_df = val_df
-        self.fold = fold
         self.data_dir = data_dir
+        self.df_dir = df_dir
+        self.fold = fold
         self.debug = debug
+
+        df = pd.read_csv(f"{data_dir}/{self.df_dir}")
+
+        self.df_train = df[df.kfold != self.fold].reset_index(drop=True)
+        self.df_valid = df[df.kfold == self.fold].reset_index(drop=True)
+
         self.save_hyperparameters()
 
         self.model = timm.create_model("tf_efficientnet_b0_ns", pretrained=True, in_chans=3, num_classes=500)
@@ -31,7 +36,7 @@ class PetFinderModule(pl.LightningModule):
             nn.Linear(120, 1)
         )
 
-
+   
     def forward(self, image, metadata):
         x = self.model(image)
         x = torch.cat([x, metadata], dim=-1)
@@ -108,13 +113,13 @@ class PetFinderModule(pl.LightningModule):
 
     def train_dataloader(self):
        
-        train_dataset = dataset.PetFinderDataset(self.data_dir, self.train_df, self._get_train_transforms(), "/train")
+        train_dataset = dataset.PetFinderDataset(self.data_dir, self.df_train, self._get_train_transforms(), "/train")
         train_dl = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=12)
         return train_dl
 
     def val_dataloader(self):
       
-        val_dataset = dataset.PetFinderDataset(self.data_dir, self.val_df, self._get_val_transforms(), "/train")
+        val_dataset = dataset.PetFinderDataset(self.data_dir, self.df_valid, self._get_val_transforms(), "/train")
         val_dl = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=12)
         return val_dl
 

@@ -44,10 +44,7 @@ def create_folds(df, n_s=5, n_grp=None):
     
     return df
 
-def prepare_df(df, fold):
-    df_train = df[df.kfold != fold].reset_index(drop=True)
-    df_valid = df[df.kfold == fold].reset_index(drop=True)
-    return df_train, df_valid
+
 
 
 def download_dataset():
@@ -63,6 +60,14 @@ def download_dataset():
         with zipfile.ZipFile(f"{DATA_DIR}/petfinder-pawpularity-score.zip","r") as zip_ref:    
             zip_ref.extractall(DATA_DIR)
 
+def generate_folds():
+    if not os.path.exists(f"{DATA_DIR}/train_folds.csv"):
+        train_df = pd.read_csv(f"{DATA_DIR}/train.csv", nrows=100)
+        #Sturges' rule
+        num_bins = int(np.floor(1+np.log2(len(train_df))))
+        train_df = create_folds(train_df, n_s=num_bins, n_grp=14)
+        train_df.to_csv(f"{DATA_DIR}/train_folds.csv", index=False)
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -73,26 +78,15 @@ if __name__ == "__main__":
     args = parser.parse_args()   
 
     download_dataset()
+    generate_folds()
+
     if args.debug == True:
-        train_df = pd.read_csv(f"{DATA_DIR}/train.csv", nrows=100)
         args.epochs = 1
-    else:
-        train_df = pd.read_csv(f"{DATA_DIR}/train.csv")
-
+    
     test_df = pd.read_csv(f"{DATA_DIR}/test.csv")
-
-    #Sturges' rule
-    num_bins = int(np.floor(1+np.log2(len(train_df))))
-    train_df = create_folds(train_df, n_s=num_bins, n_grp=14)
-
-    print(f'loaded {len(train_df)} rows')
-    print(f'num_bins: {num_bins}')
 
     for fold in range(args.folds):
         print(f"{'='*38} Fold: {fold} {'='*38}")
-
-
-        train_dl, val_dl = prepare_df(train_df, fold)
 
         early_stopping_callback = EarlyStopping(monitor='val_rmse',mode="min", patience=4)
         checkpoint_callback = ModelCheckpoint(
@@ -104,7 +98,7 @@ if __name__ == "__main__":
             mode="min"
         )
 
-        model = PetFinderModule(train_dl, val_dl, fold, DATA_DIR, debug=args.debug)
+        model = PetFinderModule(DATA_DIR, "train_folds.csv", fold, debug=args.debug)
         trainer = pl.Trainer(
             accelerator="auto",
             callbacks=[early_stopping_callback, checkpoint_callback],
