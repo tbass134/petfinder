@@ -67,8 +67,8 @@ class PetFinderModule(pl.LightningModule):
 
         labels = torch.stack(labels)
         preds = torch.stack(preds)
-        print("preds", preds)
-        print("labels", labels)
+        
+        print(f"preds:{preds[:5]} labels:{labels[:5]}")
 
         train_rmse = mean_squared_error(labels.detach().cpu(), preds.detach().cpu(), squared=False)
         
