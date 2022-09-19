@@ -27,8 +27,7 @@ class PetFinderModule(pl.LightningModule):
 
         self.save_hyperparameters()
 
-        self.model = timm.create_model("tf_efficientnet_b0_ns", pretrained=True, in_chans=3, num_classes=500)
-        # self.model.classifier = nn.Linear(self.model.classifier.in_features, 128)
+        self.model = timm.create_model("efficientnet_b3", pretrained=True, num_classes=500)
         self.final_fc = nn.Sequential(
             nn.Linear(500 + 12, 120),
             nn.ReLU(),
@@ -108,8 +107,8 @@ class PetFinderModule(pl.LightningModule):
         return optim.Adam(self.parameters(), lr=1e-4)
 
     def _criterion(self, outputs, targets):
-        return nn.MSELoss()(outputs, targets)
-        # return torch.sqrt(nn.MSELoss()(outputs.view(-1), targets.view(-1)))
+        # return nn.MSELoss()(outputs, targets)
+        return torch.sqrt(nn.MSELoss()(outputs.view(-1), targets.view(-1)))
 
     def train_dataloader(self):
        
@@ -127,16 +126,17 @@ class PetFinderModule(pl.LightningModule):
     def _get_train_transforms(self):
         tfrms = transforms.Compose([
             transforms.ToPILImage(),
-            transforms.Resize((28, 28)),
-            transforms.ToTensor(),
+            transforms.Resize((512, 512)),
+            transforms.RandomHorizontalFlip(p=0.5),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            transforms.ToTensor()
         ])
         return tfrms
 
     def _get_val_transforms(self):
         tfrms = transforms.Compose([
             transforms.ToPILImage(),
-            transforms.Resize((28, 28)),
+            transforms.Resize((512, 512)),
             transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])
